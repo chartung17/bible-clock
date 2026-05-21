@@ -11,7 +11,10 @@ type Verse = {
 };
 
 export default function VerseDisplay({ hour, minute }: { hour: number; minute: number }) {
-    const [verse, setVerse] = useState<Verse>({ book: "", verse: ""});
+    const [verses, setVerses] = useState<Verse[]>([]);
+    const [verseIndex, setVerseIndex] = useState(0);
+
+    const verse = useMemo(() => verses[verseIndex] ?? { book: "", verse: "" }, [verses, verseIndex]);
 
     const time = useMemo(() => `${hour}${minute > 0 ? `:${String(minute).padStart(2, '0')}` : ''}`, [hour, minute]);
 
@@ -24,18 +27,30 @@ export default function VerseDisplay({ hour, minute }: { hour: number; minute: n
 
     const unfavorite = () => state.favoriteVerses[time].delete();
 
+    const refresh = () => {
+        if (verses.length <= 1) return;
+        const maxRetries = 10;
+        let index = 0;
+        for (let i = 0; i < maxRetries; i++) {
+            index = Math.floor(Math.random() * verses.length);
+            if (index !== verseIndex) break;
+        }
+        setVerseIndex(index);
+    }
+
     useEffect(() => {
         const fetchVerse = async () => {
             const response = await fetch(`${nextConfig.basePath}/bibles/${translation}/${hour}/${minute}/verses.json`);
-            const verses: Verse[] = await response.json();
-            let verse: Verse | undefined;
+            const newVerses: Verse[] = await response.json();
+            setVerses(newVerses);
+            let index: number | undefined;
             if (favoriteVerse) {
-                verse = verses.find(v => v.book === favoriteVerse);
+                index = newVerses.findIndex(v => v.book === favoriteVerse);
             }
-            if (!verse) {
-                verse = verses[Math.floor(Math.random() * verses.length)];
+            if (index === undefined) {
+                index = Math.floor(Math.random() * newVerses.length);
             }
-            setVerse(verse ?? { book: "", verse: ""});
+            setVerseIndex(index ?? 0);
         }
 
         if (hour > 0) {
@@ -46,7 +61,12 @@ export default function VerseDisplay({ hour, minute }: { hour: number; minute: n
     return (
         verse.verse ? (
             <>
-            <div className="w-full flex flex-row justify-end">
+            <div className="w-full flex flex-row justify-end gap-4">
+                {verses.length > 1 && (
+                    <button onClick={refresh} className="cursor-pointer text-2xl">
+                        ↻
+                    </button>
+                )}
                 <button onClick={favorited ? unfavorite : favorite} className="cursor-pointer text-2xl">
                     {favorited ? "♥" : "♡"}
                 </button>
