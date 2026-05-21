@@ -1,14 +1,22 @@
 "use client";
 
-import nextConfig from "@/next.config";
+import VerseDisplay from "@/components/VerseDisplay";
 import { translations } from "@/services/bible";
+import { state, stateSyncStatus } from "@/services/state";
+import { useValue } from "@legendapp/state/react";
 import { useEffect, useState } from "react";
 
 export default function Home() {
   const [hour, setHour] = useState(0);
   const [minute, setMinute] = useState(0);
-  const [verse, setVerse] = useState({ book: "", verse: ""});
-  const [translation, setTranslation] = useState("DRC");
+
+  const translation = useValue(state.translation);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -16,24 +24,21 @@ export default function Home() {
       const currentHour = now.getHours() % 12 || 12;
       const currentMinute = now.getMinutes();
       if (hour === currentHour && minute === currentMinute) return;
-
-      const response = await fetch(`${nextConfig.basePath}/bibles/${translation}/${currentHour}/${currentMinute}/verses.json`);
-      const verses = await response.json();
-      const randomVerse = await verses[Math.floor(Math.random() * verses.length)];
       setHour(currentHour);
       setMinute(currentMinute);
-      setVerse(randomVerse ?? { book: "", verse: ""});
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [hour, minute, verse, translation]);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+    <>
       <header className="w-full flex flex-row justify-end items-center gap-4 p-4">
         <select 
           value={translation} 
-          onChange={(e) => { setTranslation(e.target.value); setHour(0); setVerse({ book: "", verse: ""}); }}
+          onChange={(e) => { state.translation.set(e.target.value); setHour(0); }}
           className="bg-black"
         >
           {translations.map(({ name, slug }) => (
@@ -41,16 +46,9 @@ export default function Home() {
           ))}
         </select>
       </header>
-      <main className="flex flex-1 w-full max-w-3xl flex-col py-32 px-16 gap-4 bg-white dark:bg-black">
-        {verse.verse ? (
-          <>
-            <p className="text-2xl sm:text-3xl lg:text-4xl">{verse.verse}</p>
-            <p className="text-4xl text-right w-full">- {verse.book} <span className="text-6xl">{hour}{minute > 0 ? `:${String(minute).padStart(2, '0')}` : ''}</span></p>
-          </>
-        ) : hour ? (
-          <p className="text-4xl text-right w-full"><span className="text-6xl">{hour}:{minute}</span></p>
-        ) : null}
+      <main className="flex flex-1 w-full max-w-3xl flex-col py-32 px-16 gap-4 bg-black">
+        <VerseDisplay hour={hour} minute={minute} key={`${hour}:${minute}`} />
       </main>
-    </div>
+    </>
   );
 }
