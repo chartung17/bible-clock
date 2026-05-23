@@ -10,5 +10,5 @@ export const translations: TranslationInfo[] = [
     { name: "King James Version with Apocrypha", slug: "KJVA" },
     { name: "Lexham English Bible", slug: "LEB" },
     { name: "Catholic Public Domain Version", slug: "CPDV" },
-    { name: "Open English Bible", slug: "OEV" },
+    { name: "Open English Bible", slug: "OEB" },
 ];
