@@ -2,13 +2,12 @@
 
 import VerseDisplay from "@/components/VerseDisplay";
 import { translations } from "@/services/bible";
-import { state, stateSyncStatus } from "@/services/state";
+import { state } from "@/services/state";
 import { useValue } from "@legendapp/state/react";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [hour, setHour] = useState(0);
-  const [minute, setMinute] = useState(0);
+  const [{ hour, minute }, setHourAndMinute] = useState({ hour: 0, minute: 0});
 
   const translation = useValue(state.translation);
 
@@ -24,8 +23,7 @@ export default function Home() {
       const currentHour = now.getHours() % 12 || 12;
       const currentMinute = now.getMinutes();
       if (hour === currentHour && minute === currentMinute) return;
-      setHour(currentHour);
-      setMinute(currentMinute);
+      setHourAndMinute({ hour: currentHour, minute: currentMinute });
     }, 1000);
 
     return () => clearInterval(interval);
@@ -38,7 +36,7 @@ export default function Home() {
       <header className="w-full flex flex-row justify-end items-center gap-4 p-4">
         <select 
           value={translation} 
-          onChange={(e) => { state.translation.set(e.target.value); setHour(0); }}
+          onChange={(e) => state.translation.set(e.target.value)}
           className="bg-black"
         >
           {translations.map(({ name, slug }) => (
@@ -47,7 +45,7 @@ export default function Home() {
         </select>
       </header>
       <main className="flex flex-1 w-full max-w-3xl flex-col py-32 px-16 gap-4 bg-black">
-        <VerseDisplay hour={hour} minute={minute} key={`${hour}:${minute}`} />
+        <VerseDisplay hour={hour} minute={minute} key={`${translation}-${hour}:${minute}`} />
       </main>
     </>
   );
